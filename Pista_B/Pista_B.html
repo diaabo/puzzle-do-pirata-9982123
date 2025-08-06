@@ -21,14 +21,21 @@
   #display {
     font-size: 2rem;
     letter-spacing: 10px;
-    margin-bottom: 20px;
+    margin-bottom: 10px;
     background: rgba(0,0,0,0.7);
     border: 2px solid #ffd700;
     width: 180px;        /* Tamanho fixo */
     height: 50px;        /* Altura fixa */
     line-height: 50px;   /* Alinha verticalmente */
-    margin: 0 auto 20px auto;
+    margin: 0 auto 10px auto;
     padding: 0;
+  }
+
+  #hint {
+    font-size: 1rem;
+    min-height: 1.5em; /* reserva espaço para não saltar */
+    margin-bottom: 20px;
+    color: #ffcc00;
   }
 
   .keypad {
@@ -68,7 +75,6 @@
 
   #treasure {
     display: none;
-    margin-top: 30px;
     max-width: 80%;
     height: auto;
     position: fixed;
@@ -82,6 +88,7 @@
 
 <h1 id="title">Introduz o Código Pirata</h1>
 <div id="display"></div>
+<div id="hint"></div>
 
 <div class="keypad" id="keypad">
   <div class="key">1</div>
@@ -106,10 +113,22 @@
   const keypad = document.getElementById('keypad');
   const treasure = document.getElementById('treasure');
   const title = document.getElementById('title');
+  const hint = document.getElementById('hint');
   const wrongSound = document.getElementById('wrongSound');
   const successSound = document.getElementById('successSound');
 
   let input = "";
+  let failCount = 0;
+
+  function showHint() {
+    if (failCount === 3) {
+      hint.textContent = "Já te dei a solução...";
+    } else if (failCount === 5) {
+      hint.textContent = "Já te dei a solução... Olha para a tua mão";
+    } else if (failCount === 8) {
+      hint.textContent = "Já te dei a solução... Olha para a tua mão 🟡⚪🟡";
+    }
+  }
 
   keypad.addEventListener('click', (e) => {
     if (!e.target.classList.contains('key')) return;
@@ -126,10 +145,12 @@
         keypad.style.display = "none";
         display.style.display = "none";
         title.style.display = "none";
+        hint.style.display = "none";
 
         // Mostra só o tesouro
         treasure.style.display = "block";
       } else {
+        failCount++;
         wrongSound.play();
         keypad.classList.add('shake');
         setTimeout(() => keypad.classList.remove('shake'), 300);
@@ -140,6 +161,7 @@
           input = "";
           display.textContent = "";
           display.style.borderColor = "#ffd700";
+          showHint();
         }, 1000);
       }
     }
