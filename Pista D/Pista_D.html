@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Adivinha do Pirata</title>
+  <style>
+    /* Fundo animado */
+    body {
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: linear-gradient(-45deg, #0b0c10, #1f2833, #0b0c10, #1f2833);
+      background-size: 400% 400%;
+      animation: gradient 10s ease infinite;
+      overflow: hidden;
+      font-family: 'Treasure Map Deadhand', cursive, Arial, sans-serif;
+    }
+
+    @keyframes gradient {
+      0% {background-position: 0% 50%;}
+      50% {background-position: 100% 50%;}
+      100% {background-position: 0% 50%;}
+    }
+
+    /* Efeito de estrelas/pontos brilhantes */
+    .sparkle {
+      position: absolute;
+      width: 2px;
+      height: 2px;
+      background: white;
+      border-radius: 50%;
+      animation: twinkle 3s infinite ease-in-out;
+    }
+    @keyframes twinkle {
+      0%,100% {opacity: 0;}
+      50% {opacity: 1;}
+    }
+
+    /* Texto da adivinha */
+    .riddle {
+      color: #ffdd99;
+      font-size: 2em;
+      text-align: center;
+      max-width: 80%;
+      line-height: 1.5em;
+      text-shadow: 0 0 10px rgba(255,200,100,0.8), 0 0 20px rgba(255,180,50,0.5);
+      animation: float 3s ease-in-out infinite;
+    }
+
+    /* Balançar suave */
+    @keyframes float {
+      0% {transform: translateY(0px);}
+      50% {transform: translateY(-10px);}
+      100% {transform: translateY(0px);}
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Estrelas aleatórias -->
+  <script>
+    for(let i=0; i<50; i++){
+      const star = document.createElement('div');
+      star.className = 'sparkle';
+      star.style.top = Math.random()*100 + 'vh';
+      star.style.left = Math.random()*100 + 'vw';
+      star.style.animationDuration = (Math.random()*2+1) + 's';
+      document.body.appendChild(star);
+    }
+  </script>
+
+  <div class="riddle">
+    Vermelho e doce, no verão dá prazer.<br>
+    Onde ele cresce, a pista vais ver!
+  </div>
+
+</body>
+</html>
