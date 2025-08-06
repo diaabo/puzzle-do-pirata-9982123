@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <title>Puzzle do Pirata Rasgado</title>
+  <style>
+    body {
+      font-family: 'Comic Sans MS', sans-serif;
+      background: #f0f0e0 url('fundo-madeira.jpg') center/cover fixed;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+
+    h1 { color: #5a3a1c; text-shadow: 1px 1px #fff; }
+
+    #puzzle-board {
+      position: relative;
+      width: 450px;
+      height: 450px;
+      display: grid;
+      grid-template-columns: repeat(3, 150px);
+      grid-template-rows: repeat(3, 150px);
+      gap: 0;
+      margin-top: 20px;
+      border: 5px solid #5a3a1c;
+      box-shadow: 0 0 15px rgba(0,0,0,0.4);
+      background-color: #ddd;
+    }
+
+    .slot {
+      width: 150px;
+      height: 150px;
+      border: 1px dashed rgba(0,0,0,0.2);
+    }
+
+    .piece {
+      width: 150px;
+      height: 150px;
+      background-image: url('mapa.jpg');
+      background-size: 450px 450px;
+      cursor: grab;
+      position: relative;
+      z-index: 2;
+      clip-path: polygon(
+        10% 0%, 90% 0%, 100% 10%, 100% 90%, 90% 100%, 10% 100%, 0% 90%, 0% 10%
+      );
+      transition: transform 0.2s;
+    }
+
+    .piece:active {
+      cursor: grabbing;
+      transform: scale(1.1);
+    }
+
+    #pieces {
+      margin-top: 30px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      width: 500px;
+    }
+
+    #success-message {
+      margin-top: 30px;
+      font-size: 1.8em;
+      color: darkgreen;
+      background: #fff8cc;
+      padding: 15px 25px;
+      border-radius: 12px;
+      border: 3px solid #aa8800;
+      box-shadow: 0 0 10px rgba(0,0,0,0.3);
+      display: none;
+      animation: glow 1s infinite alternate;
+    }
+
+    @keyframes glow {
+      from { box-shadow: 0 0 10px gold; }
+      to { box-shadow: 0 0 30px gold; }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="puzzle-board">
+    <!-- 9 slots do puzzle -->
+    <div class="slot" data-position="0"></div>
+    <div class="slot" data-position="1"></div>
+    <div class="slot" data-position="2"></div>
+    <div class="slot" data-position="3"></div>
+    <div class="slot" data-position="4"></div>
+    <div class="slot" data-position="5"></div>
+    <div class="slot" data-position="6"></div>
+    <div class="slot" data-position="7"></div>
+    <div class="slot" data-position="8"></div>
+  </div>
+
+  <div id="pieces"></div>
+
+  <div id="success-message">🏴‍☠️ Muito bem, marujo!🏴‍☠️</div>
+
+  <!-- Som de vitória -->
+  <audio id="victory-sound" src="vitoria.mp3" preload="auto"></audio>
+
+  <script>
+    const slots = document.querySelectorAll('.slot');
+    const piecesContainer = document.getElementById('pieces');
+    const successMessage = document.getElementById('success-message');
+    const victorySound = document.getElementById('victory-sound');
+
+    // Criar peças dinamicamente
+    const positions = [
+      '0px 0px', '-150px 0px', '-300px 0px',
+      '0px -150px', '-150px -150px', '-300px -150px',
+      '0px -300px', '-150px -300px', '-300px -300px'
+    ];
+
+    let piecesArray = [];
+
+    for (let i = 0; i < 9; i++) {
+      const piece = document.createElement('div');
+      piece.classList.add('piece');
+      piece.draggable = true;
+      piece.dataset.piece = i;
+      piece.style.backgroundPosition = positions[i];
+      piecesArray.push(piece);
+    }
+
+    // Baralhar peças
+    piecesArray.sort(() => Math.random() - 0.5);
+
+    // Adicionar peças ao container
+    piecesArray.forEach(piece => piecesContainer.appendChild(piece));
+
+    // Drag and Drop
+    const pieces = document.querySelectorAll('.piece');
+
+    pieces.forEach(piece => {
+      piece.addEventListener('dragstart', e => {
+        e.dataTransfer.setData('text/plain', piece.dataset.piece);
+      });
+    });
+
+    slots.forEach(slot => {
+      slot.addEventListener('dragover', e => e.preventDefault());
+
+      slot.addEventListener('drop', e => {
+        e.preventDefault();
+        const pieceId = e.dataTransfer.getData('text/plain');
+        const piece = document.querySelector(`.piece[data-piece='${pieceId}']`);
+
+        // Permitir colocar mesmo se já houver uma peça: move a peça antiga de volta para peças
+        if (slot.hasChildNodes()) {
+          piecesContainer.appendChild(slot.firstChild);
+        }
+
+        slot.appendChild(piece);
+
+        checkWin();
+      });
+    });
+
+    function checkWin(){
+      const allSlots = document.querySelectorAll('.slot');
+      let correct = 0;
+      allSlots.forEach(slot => {
+        if(slot.hasChildNodes()){
+          const child = slot.firstChild;
+          if(child.dataset.piece === slot.dataset.position){
+            correct++;
+          }
+        }
+      });
+
+      if(correct === 9){
+        successMessage.style.display = 'block';
+        victorySound.play();
+      } else {
+        successMessage.style.display = 'none';
+      }
+    }
+  </script>
+</body>
+</html>
