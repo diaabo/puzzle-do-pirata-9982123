@@ -2,7 +2,7 @@
 <html lang="pt">
 <head>
   <meta charset="UTF-8">
-  <title>Criptex Pirata</title>
+  <title>Criptex - Palavra: BOLAS</title>
   <style>
     body {
       background: black;
@@ -17,8 +17,8 @@
 
     .criptex {
       display: flex;
-      gap: 10px;
-      margin-bottom: 20px;
+      gap: 20px; /* mais espaço entre rodas */
+      margin-bottom: 30px;
     }
 
     .slot {
@@ -26,23 +26,23 @@
       flex-direction: column;
       align-items: center;
       background: #d2b48c;
-      border-radius: 5px;
-      padding: 5px;
-      box-shadow: 0 0 5px #000;
+      border-radius: 10px;
+      padding: 8px;
+      box-shadow: 0 0 8px #000;
     }
 
     .letter {
-      width: 60px;
-      height: 60px;
+      width: 80px;    /* maior */
+      height: 80px;   /* maior */
       background: #eee;
       display: flex;
       justify-content: center;
       align-items: center;
-      font-size: 2rem;
+      font-size: 2.5rem; /* letras maiores */
       font-weight: bold;
       color: black;
-      margin: 5px 0;
-      border-radius: 5px;
+      margin: 8px 0;
+      border-radius: 8px;
     }
 
     .btn {
@@ -50,10 +50,10 @@
       color: white;
       border: none;
       cursor: pointer;
-      font-size: 1.5rem;
-      width: 40px;
-      height: 40px;
-      border-radius: 5px;
+      font-size: 2rem;
+      width: 50px;
+      height: 50px;
+      border-radius: 8px;
     }
 
     .btn:hover {
@@ -63,7 +63,7 @@
     #mensagem {
       display: none;
       color: lime;
-      font-size: 2rem;
+      font-size: 2.5rem;
       margin-top: 20px;
     }
 
@@ -82,11 +82,11 @@
   <img id="pista" src="Pista_C.jpg" alt="Pista C">
 
   <script>
-    const palavraChave = "BARCOS";
+    const palavraChave = "BOLAS";
     const alfabeto = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split('');
     const container = document.getElementById('criptex');
 
-    function criarSlot(index) {
+    function criarSlot() {
       const slot = document.createElement('div');
       slot.className = 'slot';
 
@@ -103,7 +103,7 @@
       down.className = 'btn';
       down.textContent = '▼';
 
-      // ▲ agora roda para trás no alfabeto
+      // ▲ roda para trás
       up.addEventListener('click', () => {
         let idx = parseInt(letter.dataset.index);
         idx = (idx - 1 + alfabeto.length) % alfabeto.length;
@@ -112,7 +112,7 @@
         verificar();
       });
 
-      // ▼ agora roda para a frente no alfabeto
+      // ▼ roda para a frente
       down.addEventListener('click', () => {
         let idx = parseInt(letter.dataset.index);
         idx = (idx + 1) % alfabeto.length;
@@ -128,8 +128,9 @@
       container.appendChild(slot);
     }
 
+    // Criar 5 rodas
     for (let i = 0; i < palavraChave.length; i++) {
-      criarSlot(i);
+      criarSlot();
     }
 
     function verificar() {
