@@ -72,13 +72,27 @@
     .selected {
       outline: 3px solid red;
     }
+
+    #restart {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 1em;
+      background-color: #5a3a1c;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    #restart:hover {
+      background-color: #7a4a2c;
+    }
   </style>
 </head>
 <body>
   <h1>Puzzle do Pirata</h1>
 
   <div id="puzzle-board">
-    <!-- 9 slots -->
     <div class="slot" data-position="0"></div>
     <div class="slot" data-position="1"></div>
     <div class="slot" data-position="2"></div>
@@ -92,90 +106,100 @@
 
   <div id="pieces"></div>
 
+  <button id="restart">🔄 Recomeçar</button>
+
   <div id="success-message">🏴‍☠️ Muito bem, marujo!</div>
 
   <audio id="victory-sound" src="vitoria.mp3" preload="auto"></audio>
 
   <script>
-    const slots = document.querySelectorAll('.slot');
+    const board = document.getElementById('puzzle-board');
     const piecesContainer = document.getElementById('pieces');
     const successMessage = document.getElementById('success-message');
     const victorySound = document.getElementById('victory-sound');
-    let selectedPiece = null;
-
+    const restartButton = document.getElementById('restart');
     const positions = [
       '0px 0px', '-150px 0px', '-300px 0px',
       '0px -150px', '-150px -150px', '-300px -150px',
       '0px -300px', '-150px -300px', '-300px -300px'
     ];
 
-    // Criar peças
-    for (let i = 0; i < 9; i++) {
-      const piece = document.createElement('div');
-      piece.classList.add('piece');
-      piece.dataset.piece = i;
-      piece.style.backgroundPosition = positions[i];
-      piece.draggable = true;
+    let selectedPiece = null;
 
-      // Desktop drag and drop
-      piece.addEventListener('dragstart', e => {
-        selectedPiece = piece;
-        e.dataTransfer.setData('text/plain', piece.dataset.piece);
-      });
+    function criarPecas() {
+      piecesContainer.innerHTML = '';
+      for (let i = 0; i < 9; i++) {
+        const piece = document.createElement('div');
+        piece.classList.add('piece');
+        piece.dataset.piece = i;
+        piece.style.backgroundPosition = positions[i];
+        piece.draggable = true;
 
-      // Mobile tap-to-select
-      piece.addEventListener('click', () => {
-        if (selectedPiece === piece) {
-          piece.classList.remove('selected');
-          selectedPiece = null;
-        } else {
-          document.querySelectorAll('.piece').forEach(p => p.classList.remove('selected'));
-          piece.classList.add('selected');
+        // Desktop drag
+        piece.addEventListener('dragstart', e => {
           selectedPiece = piece;
-        }
-      });
+          e.dataTransfer.setData('text/plain', piece.dataset.piece);
+        });
 
-      piecesContainer.appendChild(piece);
+        // Mobile tap
+        piece.addEventListener('click', () => {
+          if (selectedPiece === piece) {
+            piece.classList.remove('selected');
+            selectedPiece = null;
+          } else {
+            document.querySelectorAll('.piece').forEach(p => p.classList.remove('selected'));
+            piece.classList.add('selected');
+            selectedPiece = piece;
+          }
+        });
+
+        piecesContainer.appendChild(piece);
+      }
+
+      // Baralhar
+      for (let i = piecesContainer.children.length; i >= 0; i--) {
+        piecesContainer.appendChild(piecesContainer.children[Math.random() * i | 0]);
+      }
     }
 
-    // Baralhar peças
-    for (let i = piecesContainer.children.length; i >= 0; i--) {
-      piecesContainer.appendChild(piecesContainer.children[Math.random() * i | 0]);
+    function configurarSlots() {
+      const slots = document.querySelectorAll('.slot');
+      slots.forEach(slot => {
+        slot.innerHTML = '';
+
+        slot.addEventListener('dragover', e => e.preventDefault());
+
+        slot.addEventListener('drop', e => {
+          e.preventDefault();
+          if (selectedPiece) {
+            if (slot.firstChild && slot.firstChild !== selectedPiece) {
+              piecesContainer.appendChild(slot.firstChild);
+            }
+            slot.innerHTML = '';
+            slot.appendChild(selectedPiece);
+            selectedPiece.classList.remove('selected');
+            selectedPiece = null;
+            verificarPuzzle();
+          }
+        });
+
+        slot.addEventListener('click', () => {
+          if (selectedPiece) {
+            if (slot.firstChild && slot.firstChild !== selectedPiece) {
+              piecesContainer.appendChild(slot.firstChild);
+            }
+            slot.innerHTML = '';
+            slot.appendChild(selectedPiece);
+            selectedPiece.classList.remove('selected');
+            selectedPiece = null;
+            verificarPuzzle();
+          }
+        });
+      });
     }
-
-    // Slots: drop (desktop) e click (mobile)
-    slots.forEach(slot => {
-      slot.addEventListener('dragover', e => e.preventDefault());
-
-      slot.addEventListener('drop', e => {
-        e.preventDefault();
-        if (selectedPiece) {
-          if (slot.firstChild && slot.firstChild !== selectedPiece) {
-            piecesContainer.appendChild(slot.firstChild);
-          }
-          slot.innerHTML = '';
-          slot.appendChild(selectedPiece);
-          selectedPiece.classList.remove('selected');
-          selectedPiece = null;
-          verificarPuzzle();
-        }
-      });
-
-      slot.addEventListener('click', () => {
-        if (selectedPiece) {
-          if (slot.firstChild && slot.firstChild !== selectedPiece) {
-            piecesContainer.appendChild(slot.firstChild);
-          }
-          slot.innerHTML = '';
-          slot.appendChild(selectedPiece);
-          selectedPiece.classList.remove('selected');
-          selectedPiece = null;
-          verificarPuzzle();
-        }
-      });
-    });
 
     function verificarPuzzle() {
+      const slots = document.querySelectorAll('.slot');
       let correct = 0;
       slots.forEach(slot => {
         const piece = slot.firstChild;
@@ -191,6 +215,18 @@
         successMessage.style.display = 'none';
       }
     }
+
+    restartButton.addEventListener('click', () => {
+      successMessage.style.display = 'none';
+      selectedPiece = null;
+      document.querySelectorAll('.piece').forEach(p => p.classList.remove('selected'));
+      configurarSlots();
+      criarPecas();
+    });
+
+    // Iniciar jogo
+    configurarSlots();
+    criarPecas();
   </script>
 </body>
 </html>
