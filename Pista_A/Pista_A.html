@@ -11,12 +11,7 @@
       flex-direction: column;
       align-items: center;
       padding: 20px;
-      touch-action: manipulation;
-    }
-
-    h1 {
-      color: #5a3a1c;
-      text-shadow: 1px 1px #fff;
+      touch-action: none;
     }
 
     #puzzle-board {
@@ -25,15 +20,16 @@
       display: grid;
       grid-template-columns: repeat(3, 150px);
       grid-template-rows: repeat(3, 150px);
-      margin-top: 20px;
       border: 5px solid #5a3a1c;
       background-color: #ddd;
+      margin-top: 20px;
     }
 
     .slot {
       width: 150px;
       height: 150px;
       border: 1px dashed #999;
+      position: relative;
     }
 
     .piece {
@@ -41,14 +37,9 @@
       height: 150px;
       background-image: url('mapa.jpg');
       background-size: 450px 450px;
-      cursor: grab;
+      position: absolute;
       touch-action: none;
-      transition: transform 0.2s;
-    }
-
-    .piece:active {
-      cursor: grabbing;
-      transform: scale(1.05);
+      z-index: 10;
     }
 
     #pieces {
@@ -58,6 +49,8 @@
       gap: 10px;
       justify-content: center;
       width: 500px;
+      position: relative;
+      min-height: 160px;
     }
 
     #success-message {
@@ -82,26 +75,13 @@
 <body>
   <h1>Puzzle do Pirata</h1>
 
-  <div id="puzzle-board">
-    <div class="slot" data-position="0"></div>
-    <div class="slot" data-position="1"></div>
-    <div class="slot" data-position="2"></div>
-    <div class="slot" data-position="3"></div>
-    <div class="slot" data-position="4"></div>
-    <div class="slot" data-position="5"></div>
-    <div class="slot" data-position="6"></div>
-    <div class="slot" data-position="7"></div>
-    <div class="slot" data-position="8"></div>
-  </div>
-
+  <div id="puzzle-board"></div>
   <div id="pieces"></div>
-
   <div id="success-message">🏴‍☠️ Muito bem, marujo!</b></div>
-
   <audio id="victory-sound" src="vitoria.mp3" preload="auto"></audio>
 
   <script>
-    const slots = document.querySelectorAll('.slot');
+    const board = document.getElementById('puzzle-board');
     const piecesContainer = document.getElementById('pieces');
     const successMessage = document.getElementById('success-message');
     const victorySound = document.getElementById('victory-sound');
@@ -112,73 +92,72 @@
       '0px -300px', '-150px -300px', '-300px -300px'
     ];
 
-    let piecesArray = [];
-    let draggedElement = null;
+    let draggedPiece = null;
+    let offsetX = 0;
+    let offsetY = 0;
 
+    for (let i = 0; i < 9; i++) {
+      const slot = document.createElement('div');
+      slot.classList.add('slot');
+      slot.dataset.position = i;
+      board.appendChild(slot);
+    }
+
+    let piecesArray = [];
     for (let i = 0; i < 9; i++) {
       const piece = document.createElement('div');
       piece.classList.add('piece');
-      piece.draggable = true;
       piece.dataset.piece = i;
       piece.style.backgroundPosition = positions[i];
+      piece.style.left = `${Math.random() * 300}px`;
+      piece.style.top = `${Math.random() * 80}px`;
       piecesArray.push(piece);
     }
 
     piecesArray.sort(() => Math.random() - 0.5);
-    piecesArray.forEach(piece => piecesContainer.appendChild(piece));
+    piecesArray.forEach(p => piecesContainer.appendChild(p));
 
-    document.querySelectorAll('.piece').forEach(piece => {
-      piece.addEventListener('dragstart', e => {
-        draggedElement = piece;
-        e.dataTransfer.setData('text/plain', piece.dataset.piece);
+    piecesArray.forEach(piece => {
+      piece.addEventListener('touchstart', e => {
+        draggedPiece = piece;
+        const touch = e.touches[0];
+        offsetX = touch.clientX - piece.getBoundingClientRect().left;
+        offsetY = touch.clientY - piece.getBoundingClientRect().top;
+        piece.style.zIndex = 1000;
       });
 
-      piece.addEventListener('touchstart', () => {
-        draggedElement = piece;
+      piece.addEventListener('touchmove', e => {
+        if (!draggedPiece) return;
+        const touch = e.touches[0];
+        draggedPiece.style.left = `${touch.clientX - offsetX}px`;
+        draggedPiece.style.top = `${touch.clientY - offsetY}px`;
       });
-    });
 
-    slots.forEach(slot => {
-      slot.addEventListener('dragover', e => e.preventDefault());
+      piece.addEventListener('touchend', e => {
+        const touch = e.changedTouches[0];
+        const target = document.elementFromPoint(touch.clientX, touch.clientY);
 
-      slot.addEventListener('drop', e => {
-        e.preventDefault();
-        if (draggedElement) {
-          if (slot.firstChild && slot.firstChild !== draggedElement) {
-            piecesContainer.appendChild(slot.firstChild);
+        if (target && target.classList.contains('slot')) {
+          if (target.firstChild && target.firstChild !== draggedPiece) {
+            piecesContainer.appendChild(target.firstChild);
           }
-          slot.textContent = '';
-          slot.appendChild(draggedElement);
+          target.innerHTML = '';
+          target.appendChild(draggedPiece);
+          draggedPiece.style.left = '0px';
+          draggedPiece.style.top = '0px';
           verificarPuzzle();
-          draggedElement = null;
+        } else {
+          piecesContainer.appendChild(draggedPiece);
         }
-      });
 
-      slot.addEventListener('touchend', e => {
-        if (draggedElement) {
-          const touch = e.changedTouches[0];
-          const rect = slot.getBoundingClientRect();
-          if (
-            touch.clientX >= rect.left &&
-            touch.clientX <= rect.right &&
-            touch.clientY >= rect.top &&
-            touch.clientY <= rect.bottom
-          ) {
-            if (slot.firstChild && slot.firstChild !== draggedElement) {
-              piecesContainer.appendChild(slot.firstChild);
-            }
-            slot.textContent = '';
-            slot.appendChild(draggedElement);
-            verificarPuzzle();
-            draggedElement = null;
-          }
-        }
+        draggedPiece.style.zIndex = 10;
+        draggedPiece = null;
       });
     });
 
     function verificarPuzzle() {
       let correct = 0;
-      slots.forEach(slot => {
+      document.querySelectorAll('.slot').forEach(slot => {
         const piece = slot.firstChild;
         if (piece && piece.dataset.piece === slot.dataset.position) {
           correct++;
