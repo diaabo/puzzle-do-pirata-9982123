@@ -11,7 +11,7 @@
       flex-direction: column;
       align-items: center;
       padding: 20px;
-      touch-action: none;
+      touch-action: manipulation;
     }
 
     #puzzle-board {
@@ -29,7 +29,9 @@
       width: 150px;
       height: 150px;
       border: 1px dashed #999;
-      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
     }
 
     .piece {
@@ -37,9 +39,7 @@
       height: 150px;
       background-image: url('mapa.jpg');
       background-size: 450px 450px;
-      position: absolute;
-      touch-action: none;
-      z-index: 10;
+      cursor: grab;
     }
 
     #pieces {
@@ -49,8 +49,6 @@
       gap: 10px;
       justify-content: center;
       width: 500px;
-      position: relative;
-      min-height: 160px;
     }
 
     #success-message {
@@ -70,21 +68,40 @@
       from { box-shadow: 0 0 10px gold; }
       to { box-shadow: 0 0 30px gold; }
     }
+
+    .selected {
+      outline: 3px solid red;
+    }
   </style>
 </head>
 <body>
   <h1>Puzzle do Pirata</h1>
 
-  <div id="puzzle-board"></div>
+  <div id="puzzle-board">
+    <!-- 9 slots -->
+    <div class="slot" data-position="0"></div>
+    <div class="slot" data-position="1"></div>
+    <div class="slot" data-position="2"></div>
+    <div class="slot" data-position="3"></div>
+    <div class="slot" data-position="4"></div>
+    <div class="slot" data-position="5"></div>
+    <div class="slot" data-position="6"></div>
+    <div class="slot" data-position="7"></div>
+    <div class="slot" data-position="8"></div>
+  </div>
+
   <div id="pieces"></div>
-  <div id="success-message">🏴‍☠️ Muito bem, marujo!</b></div>
+
+  <div id="success-message">🏴‍☠️ Muito bem, marujo!</div>
+
   <audio id="victory-sound" src="vitoria.mp3" preload="auto"></audio>
 
   <script>
-    const board = document.getElementById('puzzle-board');
+    const slots = document.querySelectorAll('.slot');
     const piecesContainer = document.getElementById('pieces');
     const successMessage = document.getElementById('success-message');
     const victorySound = document.getElementById('victory-sound');
+    let selectedPiece = null;
 
     const positions = [
       '0px 0px', '-150px 0px', '-300px 0px',
@@ -92,72 +109,75 @@
       '0px -300px', '-150px -300px', '-300px -300px'
     ];
 
-    let draggedPiece = null;
-    let offsetX = 0;
-    let offsetY = 0;
-
-    for (let i = 0; i < 9; i++) {
-      const slot = document.createElement('div');
-      slot.classList.add('slot');
-      slot.dataset.position = i;
-      board.appendChild(slot);
-    }
-
-    let piecesArray = [];
+    // Criar peças
     for (let i = 0; i < 9; i++) {
       const piece = document.createElement('div');
       piece.classList.add('piece');
       piece.dataset.piece = i;
       piece.style.backgroundPosition = positions[i];
-      piece.style.left = `${Math.random() * 300}px`;
-      piece.style.top = `${Math.random() * 80}px`;
-      piecesArray.push(piece);
+      piece.draggable = true;
+
+      // Desktop drag and drop
+      piece.addEventListener('dragstart', e => {
+        selectedPiece = piece;
+        e.dataTransfer.setData('text/plain', piece.dataset.piece);
+      });
+
+      // Mobile tap-to-select
+      piece.addEventListener('click', () => {
+        if (selectedPiece === piece) {
+          piece.classList.remove('selected');
+          selectedPiece = null;
+        } else {
+          document.querySelectorAll('.piece').forEach(p => p.classList.remove('selected'));
+          piece.classList.add('selected');
+          selectedPiece = piece;
+        }
+      });
+
+      piecesContainer.appendChild(piece);
     }
 
-    piecesArray.sort(() => Math.random() - 0.5);
-    piecesArray.forEach(p => piecesContainer.appendChild(p));
+    // Baralhar peças
+    for (let i = piecesContainer.children.length; i >= 0; i--) {
+      piecesContainer.appendChild(piecesContainer.children[Math.random() * i | 0]);
+    }
 
-    piecesArray.forEach(piece => {
-      piece.addEventListener('touchstart', e => {
-        draggedPiece = piece;
-        const touch = e.touches[0];
-        offsetX = touch.clientX - piece.getBoundingClientRect().left;
-        offsetY = touch.clientY - piece.getBoundingClientRect().top;
-        piece.style.zIndex = 1000;
-      });
+    // Slots: drop (desktop) e click (mobile)
+    slots.forEach(slot => {
+      slot.addEventListener('dragover', e => e.preventDefault());
 
-      piece.addEventListener('touchmove', e => {
-        if (!draggedPiece) return;
-        const touch = e.touches[0];
-        draggedPiece.style.left = `${touch.clientX - offsetX}px`;
-        draggedPiece.style.top = `${touch.clientY - offsetY}px`;
-      });
-
-      piece.addEventListener('touchend', e => {
-        const touch = e.changedTouches[0];
-        const target = document.elementFromPoint(touch.clientX, touch.clientY);
-
-        if (target && target.classList.contains('slot')) {
-          if (target.firstChild && target.firstChild !== draggedPiece) {
-            piecesContainer.appendChild(target.firstChild);
+      slot.addEventListener('drop', e => {
+        e.preventDefault();
+        if (selectedPiece) {
+          if (slot.firstChild && slot.firstChild !== selectedPiece) {
+            piecesContainer.appendChild(slot.firstChild);
           }
-          target.innerHTML = '';
-          target.appendChild(draggedPiece);
-          draggedPiece.style.left = '0px';
-          draggedPiece.style.top = '0px';
+          slot.innerHTML = '';
+          slot.appendChild(selectedPiece);
+          selectedPiece.classList.remove('selected');
+          selectedPiece = null;
           verificarPuzzle();
-        } else {
-          piecesContainer.appendChild(draggedPiece);
         }
+      });
 
-        draggedPiece.style.zIndex = 10;
-        draggedPiece = null;
+      slot.addEventListener('click', () => {
+        if (selectedPiece) {
+          if (slot.firstChild && slot.firstChild !== selectedPiece) {
+            piecesContainer.appendChild(slot.firstChild);
+          }
+          slot.innerHTML = '';
+          slot.appendChild(selectedPiece);
+          selectedPiece.classList.remove('selected');
+          selectedPiece = null;
+          verificarPuzzle();
+        }
       });
     });
 
     function verificarPuzzle() {
       let correct = 0;
-      document.querySelectorAll('.slot').forEach(slot => {
+      slots.forEach(slot => {
         const piece = slot.firstChild;
         if (piece && piece.dataset.piece === slot.dataset.position) {
           correct++;
