@@ -112,121 +112,126 @@
 
   <audio id="victory-sound" src="vitoria.mp3" preload="auto"></audio>
 
-  <script>
-    const board = document.getElementById('puzzle-board');
-    const piecesContainer = document.getElementById('pieces');
-    const successMessage = document.getElementById('success-message');
-    const victorySound = document.getElementById('victory-sound');
-    const restartButton = document.getElementById('restart');
-    const positions = [
-      '0px 0px', '-150px 0px', '-300px 0px',
-      '0px -150px', '-150px -150px', '-300px -150px',
-      '0px -300px', '-150px -300px', '-300px -300px'
-    ];
+<script>
+  const board = document.getElementById('puzzle-board');
+  const piecesContainer = document.getElementById('pieces');
+  const successMessage = document.getElementById('success-message');
+  const victorySound = document.getElementById('victory-sound');
+  const restartButton = document.getElementById('restart');
+  const positions = [
+    '0px 0px', '-150px 0px', '-300px 0px',
+    '0px -150px', '-150px -150px', '-300px -150px',
+    '0px -300px', '-150px -300px', '-300px -300px'
+  ];
 
-    let selectedPiece = null;
+  let selectedPiece = null;
 
-    function criarPecas() {
-      piecesContainer.innerHTML = '';
-      for (let i = 0; i < 9; i++) {
-        const piece = document.createElement('div');
-        piece.classList.add('piece');
-        piece.dataset.piece = i;
-        piece.style.backgroundPosition = positions[i];
-        piece.draggable = true;
+  function criarPecas() {
+    piecesContainer.innerHTML = '';
+    for (let i = 0; i < 9; i++) {
+      const piece = document.createElement('div');
+      piece.classList.add('piece');
+      piece.dataset.piece = i;
+      piece.style.backgroundPosition = positions[i];
+      piece.draggable = true;
 
-        // Desktop drag
-        piece.addEventListener('dragstart', e => {
-          selectedPiece = piece;
-          e.dataTransfer.setData('text/plain', piece.dataset.piece);
-        });
-
-        // Mobile tap
-        piece.addEventListener('click', () => {
-          if (selectedPiece === piece) {
-            piece.classList.remove('selected');
-            selectedPiece = null;
-          } else {
-            document.querySelectorAll('.piece').forEach(p => p.classList.remove('selected'));
-            piece.classList.add('selected');
-            selectedPiece = piece;
-          }
-        });
-
-        piecesContainer.appendChild(piece);
-      }
-
-      // Baralhar
-      for (let i = piecesContainer.children.length; i >= 0; i--) {
-        piecesContainer.appendChild(piecesContainer.children[Math.random() * i | 0]);
-      }
-    }
-
-    function configurarSlots() {
-      const slots = document.querySelectorAll('.slot');
-      slots.forEach(slot => {
-        slot.innerHTML = '';
-
-        slot.addEventListener('dragover', e => e.preventDefault());
-
-        slot.addEventListener('drop', e => {
-          e.preventDefault();
-          if (selectedPiece) {
-            if (slot.firstChild && slot.firstChild !== selectedPiece) {
-              piecesContainer.appendChild(slot.firstChild);
-            }
-            slot.innerHTML = '';
-            slot.appendChild(selectedPiece);
-            selectedPiece.classList.remove('selected');
-            selectedPiece = null;
-            verificarPuzzle();
-          }
-        });
-
-        slot.addEventListener('click', () => {
-          if (selectedPiece) {
-            if (slot.firstChild && slot.firstChild !== selectedPiece) {
-              piecesContainer.appendChild(slot.firstChild);
-            }
-            slot.innerHTML = '';
-            slot.appendChild(selectedPiece);
-            selectedPiece.classList.remove('selected');
-            selectedPiece = null;
-            verificarPuzzle();
-          }
-        });
+      // Desktop
+      piece.addEventListener('dragstart', e => {
+        selectedPiece = piece;
+        e.dataTransfer.setData('text/plain', piece.dataset.piece);
       });
-    }
 
-    function verificarPuzzle() {
-      const slots = document.querySelectorAll('.slot');
-      let correct = 0;
-      slots.forEach(slot => {
-        const piece = slot.firstChild;
-        if (piece && piece.dataset.piece === slot.dataset.position) {
-          correct++;
+      // Mobile
+      piece.addEventListener('click', () => {
+        if (selectedPiece === piece) {
+          piece.classList.remove('selected');
+          selectedPiece = null;
+        } else {
+          document.querySelectorAll('.piece').forEach(p => p.classList.remove('selected'));
+          piece.classList.add('selected');
+          selectedPiece = piece;
         }
       });
 
-      if (correct === 9) {
-        successMessage.style.display = 'block';
-        victorySound.play();
-      } else {
-        successMessage.style.display = 'none';
-      }
+      piecesContainer.appendChild(piece);
     }
 
-    restartButton.addEventListener('click', () => {
-      successMessage.style.display = 'none';
-      selectedPiece = null;
-      document.querySelectorAll('.piece').forEach(p => p.classList.remove('selected'));
-      configurarSlots();
-      criarPecas();
+    // Baralhar
+    for (let i = piecesContainer.children.length; i >= 0; i--) {
+      piecesContainer.appendChild(piecesContainer.children[Math.random() * i | 0]);
+    }
+  }
+
+  function configurarSlots() {
+    const slots = document.querySelectorAll('.slot');
+    slots.forEach(slot => {
+      slot.innerHTML = '';
+
+      slot.addEventListener('dragover', e => e.preventDefault());
+
+      // Desktop drop
+      slot.addEventListener('drop', e => {
+        e.preventDefault();
+        if (selectedPiece) {
+          if (slot.firstChild && slot.firstChild !== selectedPiece) {
+            piecesContainer.appendChild(slot.firstChild);
+          }
+          slot.innerHTML = '';
+          slot.appendChild(selectedPiece);
+          selectedPiece.classList.remove('selected');
+          selectedPiece = null;
+          verificarPuzzle();
+        }
+      });
+
+      // Mobile tap-to-place
+      slot.addEventListener('click', () => {
+        if (selectedPiece) {
+          if (slot.firstChild && slot.firstChild !== selectedPiece) {
+            piecesContainer.appendChild(slot.firstChild); // devolve a anterior
+          }
+          if (slot.firstChild !== selectedPiece) {
+            slot.innerHTML = '';
+            slot.appendChild(selectedPiece);
+            selectedPiece.classList.remove('selected');
+            selectedPiece = null;
+            verificarPuzzle();
+          }
+        }
+      });
+    });
+  }
+
+  function verificarPuzzle() {
+    const slots = document.querySelectorAll('.slot');
+    let correct = 0;
+    slots.forEach(slot => {
+      const piece = slot.firstChild;
+      if (piece && piece.dataset.piece === slot.dataset.position) {
+        correct++;
+      }
     });
 
-    // Iniciar jogo
+    if (correct === 9) {
+      successMessage.style.display = 'block';
+      victorySound.play();
+    } else {
+      successMessage.style.display = 'none';
+    }
+  }
+
+  restartButton.addEventListener('click', () => {
+    successMessage.style.display = 'none';
+    selectedPiece = null;
+    document.querySelectorAll('.piece').forEach(p => p.classList.remove('selected'));
     configurarSlots();
     criarPecas();
-  </script>
+  });
+
+  // Iniciar jogo
+  configurarSlots();
+  criarPecas();
+</script>
+
 </body>
 </html>
